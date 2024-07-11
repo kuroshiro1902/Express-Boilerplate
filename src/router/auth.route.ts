@@ -6,10 +6,8 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
  * /auth
  */
 const authRouter = Router();
-authRouter.post('/login', (req, res) => AuthController.login(req, res));
-authRouter.post('/signup', (req, res) => AuthController.signup(req, res));
-authRouter.post('/verify-token', authMiddleware, (req, res) =>
-  AuthController.verifyToken(req, res)
-);
+authRouter.post('/login', AuthController.login);
+authRouter.post('/signup', AuthController.signup);
+authRouter.post('/verify-token', authMiddleware, AuthController.verifyToken);
 
 export default authRouter;

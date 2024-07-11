@@ -4,27 +4,25 @@ import { serverError } from './serverError';
 import Joi from 'joi';
 import { VALIDATOR } from '@/common/validators/Validator';
 import { UserService } from '@/services/user.service';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { ENVIRONMENT } from '@/environments/environment';
 import { Request, Response } from '@/types';
-import { IToken, IUser, UserDTO, UserValidate } from '@/models/user.model';
+import { UserDTO, UserValidate } from '@/models/user.model';
+import { AuthService } from '@/services/auth.service';
 
 export interface ILogin {
   username: string;
   password: string;
 }
-class AuthController {
-  private _LoginSchema = Joi.object<ILogin>({
-    username: Joi.string().max(32).required(),
-    password: Joi.string().max(32).required(),
-  });
-  private _expiresIn = '7d';
-  private _salt = 10;
+
+const _LoginSchema = Joi.object<ILogin>({
+  username: Joi.string().max(32).required(),
+  password: Joi.string().max(32).required(),
+});
+
+const AuthController = {
   async login(req: Request, res: Response) {
     try {
       const { value, error, message } = VALIDATOR.schemaValidate(
-        this._LoginSchema,
+        _LoginSchema,
         req.body
       );
       if (error) {
@@ -40,15 +38,13 @@ class AuthController {
           .status(STATUS_CODE.UNAUTHORIZED)
           .json({ isSuccess: false, message: 'Người dùng không tồn tại!' });
       }
-      if (!bcrypt.compareSync(password, user.password)) {
+      if (!AuthService.comparePassword(password, user.password)) {
         return res
           .status(STATUS_CODE.UNAUTHORIZED)
           .json({ isSuccess: false, message: 'Sai mật khẩu!' });
       }
 
-      const token = jwt.sign({ id: user.id } as IToken, ENVIRONMENT.secretKey, {
-        expiresIn: this._expiresIn,
-      });
+      const token = AuthService.generateAccessToken({ id: user.id });
       return res.json({
         isSuccess: true,
         data: { token, user: UserDTO(user) },
@@ -56,7 +52,7 @@ class AuthController {
     } catch (error) {
       return serverError(res, error);
     }
-  }
+  },
 
   async signup(req: Request, res: Response) {
     try {
@@ -76,7 +72,7 @@ class AuthController {
           .json({ isSuccess: false, message: 'Tên đăng nhập đã tồn tại!' });
       }
 
-      const hashedPassword = await bcrypt.hash(password, this._salt);
+      const hashedPassword = AuthService.hashPassword(password);
 
       const user = {
         name,
@@ -95,7 +91,7 @@ class AuthController {
     } catch (error) {
       return serverError(res, error);
     }
-  }
+  },
 
   async verifyToken(req: Request, res: Response) {
     const userId = req.user?.id;
@@ -109,7 +105,7 @@ class AuthController {
       isSuccess: true,
       data: UserDTO(user),
     });
-  }
-}
+  },
+};
 
-export default new AuthController();
+export default AuthController;

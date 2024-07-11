@@ -16,7 +16,7 @@ export interface IUser {
   avatarUrl?: string;
 }
 
-export interface IToken {
+export interface ITokenPayload {
   id: number;
 }
 
