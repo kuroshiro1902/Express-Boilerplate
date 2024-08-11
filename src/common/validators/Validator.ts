@@ -16,7 +16,7 @@ export const VALIDATOR = {
     return v;
   },
   schemaValidate: <ReturnValue = any>(
-    Schema: Joi.ObjectSchema<ReturnValue>,
+    Schema: Joi.Schema<ReturnValue>,
     input: any
   ): TValidationResult<ReturnValue> => {
     const { value, error } = Schema.validate(input);

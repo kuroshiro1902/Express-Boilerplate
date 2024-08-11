@@ -1,4 +1,4 @@
-import { ITokenPayload } from '@/models/User';
+import { ITokenPayload } from '@/models/user.model';
 import { Request as ERequest, Response as EResponse } from 'express';
 
 export type Request = ERequest & {

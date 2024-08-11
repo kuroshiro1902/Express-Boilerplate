@@ -50,7 +50,7 @@ export const UserModel = DB.define<Model<IUser>, IUser>(
   modelName,
   {
     id: {
-      type: DataTypes.BIGINT,
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
