@@ -33,6 +33,9 @@ class RoleModel extends Model implements IRole {
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    validate: {
+      len: [roleSchema.shape.name.minLength!, roleSchema.shape.name.maxLength!],
+    },
   })
   declare name: string;
 

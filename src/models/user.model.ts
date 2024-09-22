@@ -47,6 +47,12 @@ export class UserModel extends Model<IUser> implements IUser {
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    validate: {
+      len: [
+        userSchema.shape.password.minLength!,
+        userSchema.shape.password.maxLength!,
+      ],
+    },
   })
   declare name: string;
 
@@ -54,12 +60,24 @@ export class UserModel extends Model<IUser> implements IUser {
     type: DataType.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      len: [
+        userSchema.shape.username.minLength!,
+        userSchema.shape.username.maxLength!,
+      ],
+    },
   })
   declare username: string;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
+    validate: {
+      len: [
+        userSchema.shape.password.minLength!,
+        userSchema.shape.password.maxLength!,
+      ],
+    },
   })
   declare password: string;
 
