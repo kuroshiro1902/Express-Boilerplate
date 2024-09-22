@@ -1,48 +1,71 @@
-import {
-  IUser,
-  UpdateUserValidate,
-  UserModel,
-  UserValidate,
-} from '@/models/user.model';
+import { DEFAULT_ROLE_ID } from '@/constants/role.constant';
+import { DB } from '@/database/database';
+import { userRoleAssociation } from '@/models/associations/user-role.association';
+import { Role } from '@/models/role.model';
+import { IUser, User } from '@/models/user.model';
+import { FindOptions } from 'sequelize';
+import { z } from 'zod';
+
+const defaultPageSize = 50;
+
+const userFindOptions: FindOptions = {
+  include: [
+    {
+      model: Role.model,
+      as: 'roles',
+      through: { attributes: [] }, // Không lấy ra bảng trung gian
+    },
+  ],
+};
 
 export const UserService = {
-  async findAllBy(filter: Partial<IUser>) {
-    const users = await UserModel.findAll({
-      where: filter,
+  async findAllBy(
+    filter: Partial<IUser>,
+    limit = defaultPageSize
+  ): Promise<IUser[]> {
+    const _filter = User.schema.partial().parse(filter);
+    const users = await User.model.findAll({
+      where: _filter,
+      limit,
+      ...userFindOptions,
     });
 
     return users.map((user) => user.get({ plain: true }));
   },
 
-  async findOneBy(filter: Partial<IUser>) {
-    const user = await UserModel.findOne({
-      where: filter,
+  async findOneBy(filter: Partial<IUser>): Promise<IUser | null> {
+    const _filter = User.schema.partial().parse(filter);
+    const user = await User.model.findOne({
+      where: _filter,
+      ...userFindOptions,
     });
     return user?.get({ plain: true }) ?? null;
   },
 
-  async saveUser(input: any) {
-    const { error, value } = UserValidate(input);
-    if (error) {
-      throw new Error(`Validation error: ${error.message}`);
-    }
-    const user = await UserModel.create(value);
+  async createUser(input: Omit<IUser, 'id'>): Promise<IUser> {
+    const userInput = User.schema.omit({ id: true }).parse(input);
+    const createdUser = await DB.transaction(async (transaction) => {
+      const user = await User.model.create(userInput as IUser, { transaction });
+      await user.$set('roles', [DEFAULT_ROLE_ID], { transaction });
+      return user;
+    });
+    const user = await createdUser.reload(userFindOptions);
     return user.get({ plain: true });
-    // return user.toJSON();
   },
 
-  async updateUser(userId: number, patchValue: Partial<IUser>) {
-    const { error, value } = UpdateUserValidate(patchValue);
-    if (error) {
-      throw new Error(`Validation error: ${error.message}`);
-    }
-    const user = await UserModel.findOne({
-      where: { id: userId },
+  async updateUser(
+    userId: number,
+    patchValue: z.infer<typeof User.updateSchema>
+  ): Promise<IUser> {
+    const _userId = User.schema.shape.id.parse(userId);
+    const _patchValue = User.updateSchema.parse(patchValue);
+    const user = await User.model.findOne({
+      where: { id: _userId },
     });
     if (!user) {
       throw new Error(`Không tìm thấy user!`);
     }
-    const updatedUser = await user.update(value);
+    const updatedUser = await user.update(_patchValue);
     return updatedUser.get({ plain: true });
   },
 };

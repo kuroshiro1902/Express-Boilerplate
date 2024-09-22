@@ -1,98 +1,113 @@
-import Joi from 'joi';
-import { VALIDATOR } from '@/common/validators/Validator';
-import { DB } from '@/database/database';
-import { DataTypes, Model } from 'sequelize';
+import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { z } from 'zod';
+import { IRole, Role } from './role.model';
 
 const tableName = 'users';
-const modelName = 'User';
-
-export interface IUser {
-  id: number;
-  name: string;
-  username: string;
-  password: string;
-  email?: string;
-  dob?: number;
-  avatarUrl?: string;
-}
+const modelName = 'user';
 
 export interface ITokenPayload {
   id: number;
 }
 
-const UserSchema = Joi.object<IUser>({
-  // id: Joi.number().integer().positive(),
-  name: Joi.string().max(32).required(),
-  username: Joi.string().max(32).required(),
-  password: Joi.string().max(255).required(),
-  email: Joi.string().email().max(64),
-  dob: VALIDATOR.unixTimestamp(),
-  avatarUrl: Joi.string().uri().max(255),
-}).unknown(false);
+const userSchema = z.object({
+  id: z.number().positive(),
+  name: z.string().min(3).max(255),
+  username: z.string().min(3).max(255),
+  password: z.string().min(6).max(255),
+  email: z.string().email().max(255).optional(),
+  dob: z.number().int().optional(),
+  avatarUrl: z.string().url().max(500).optional(),
+  roles: z.array(Role.schema).optional(),
+});
 
-const UpdateableUserSchema = Joi.object<Partial<IUser>>({
-  name: Joi.string().max(32).required(),
-  password: Joi.string().max(255).required(),
-  email: Joi.string().email().max(64),
-  dob: VALIDATOR.unixTimestamp(),
-  avatarUrl: Joi.string().uri().max(255),
-}).unknown(false);
+const userUpdateSchema = z.object({
+  name: userSchema.shape.name.optional(),
+  password: userSchema.shape.password.optional(),
+  email: userSchema.shape.email.optional(),
+  avatarUrl: userSchema.shape.avatarUrl.optional(),
+  roles: userSchema.shape.roles.optional(),
+});
 
-export const UserValidate = (input: any) => {
-  return VALIDATOR.schemaValidate(UserSchema, input);
-};
+export type IUser = z.infer<typeof userSchema>;
 
-export const UpdateUserValidate = (patchValue: Partial<IUser>) => {
-  return VALIDATOR.schemaValidate(UpdateableUserSchema, patchValue);
-};
-
-export const UserModel = DB.define<Model<IUser>, IUser>(
+@Table({
+  timestamps: true,
+  underscored: true,
+  tableName,
   modelName,
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {},
-    },
-    username: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-    },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        isEmail: true,
-      },
-    },
-    dob: {
-      type: DataTypes.BIGINT,
-      allowNull: true,
-    },
-    avatarUrl: {
-      type: DataTypes.STRING(500),
-      allowNull: true,
-    },
-  },
-  {
-    tableName,
-    timestamps: true,
-    hooks: {},
-    underscored: true,
-  }
-);
+})
+export class UserModel extends Model<IUser> implements IUser {
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  declare id: number;
 
-export const UserDTO = (user: IUser) => {
-  const { id, name, avatarUrl, dob, email } = user;
-  return { id, name, avatarUrl, dob, email };
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  declare name: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    unique: true,
+  })
+  declare username: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  declare password: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true,
+    },
+  })
+  declare email?: string;
+
+  @Column({
+    type: DataType.BIGINT,
+    allowNull: true,
+  })
+  declare dob?: number;
+
+  @Column({
+    type: DataType.STRING(500),
+    allowNull: true,
+  })
+  declare avatarUrl?: string;
+
+  declare roles?: IRole[];
+}
+
+const userDto = (user: IUser) => {
+  const { id, name, email, dob, avatarUrl, roles } = user;
+  return {
+    id,
+    name,
+    email,
+    dob,
+    avatarUrl,
+    roles: roles?.map((r) => ({ name: r.name })),
+  };
+};
+
+export const User = {
+  get schema() {
+    return userSchema;
+  },
+  get updateSchema() {
+    return userUpdateSchema;
+  },
+  get model() {
+    return UserModel;
+  },
+  dto: userDto,
 };

@@ -1,7 +1,7 @@
 import { ITokenPayload } from '@/models/user.model';
 import { Request as ERequest, Response as EResponse } from 'express';
 
-export type Request = ERequest & {
+export type Request<T = { [key: string]: string }> = ERequest<T> & {
   user?: ITokenPayload;
 };
 export interface ResponseBody<T = any> {

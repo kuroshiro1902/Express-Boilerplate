@@ -1,37 +1,28 @@
 import { STATUS_CODE } from '@/common/constants/StatusCode';
 // import { Request, Response } from 'express';
 import { serverError } from './serverError';
-import Joi from 'joi';
-import { VALIDATOR } from '@/common/validators/Validator';
 import { UserService } from '@/services/user.service';
 import { Request, Response } from '@/types';
-import { UserDTO, UserValidate } from '@/models/user.model';
 import { AuthService } from '@/services/auth.service';
+import { User } from '@/models/user.model';
+import { z } from 'zod';
 
-export interface ILogin {
-  username: string;
-  password: string;
-}
-
-const _LoginSchema = Joi.object<ILogin>({
-  username: Joi.string().max(32).required(),
-  password: Joi.string().max(32).required(),
+const _LoginSchema = z.object({
+  username: User.schema.shape.username,
+  password: User.schema.shape.password,
 });
 
 const AuthController = {
   async login(req: Request, res: Response) {
     try {
-      const { value, error, message } = VALIDATOR.schemaValidate(
-        _LoginSchema,
-        req.body
-      );
+      const { data, error } = _LoginSchema.safeParse(req.body);
       if (error) {
         return res
           .status(STATUS_CODE.INVALID_INPUT)
-          .json({ isSuccess: false, message });
+          .json({ isSuccess: false, message: error.message });
       }
 
-      const { username, password } = value;
+      const { username, password } = data;
       const user = await UserService.findOneBy({ username });
       if (!user) {
         return res
@@ -47,7 +38,7 @@ const AuthController = {
       const token = AuthService.generateAccessToken({ id: user.id });
       return res.json({
         isSuccess: true,
-        data: { token, user: UserDTO(user) },
+        data: { token, user: User.dto(user) },
       });
     } catch (error) {
       return serverError(res, error);
@@ -56,14 +47,16 @@ const AuthController = {
 
   async signup(req: Request, res: Response) {
     try {
-      const { value, error } = UserValidate(req.body);
+      const { data, error } = User.schema
+        .omit({ id: true, roles: true })
+        .safeParse(req.body);
       if (error) {
         return res
           .status(STATUS_CODE.INVALID_INPUT)
           .json({ isSuccess: false, message: error.message });
       }
 
-      const { name, username, password, email, dob, avatarUrl } = value;
+      const { name, username, password, email, dob, avatarUrl } = data;
 
       const existedUser = await UserService.findOneBy({ username });
       if (existedUser) {
@@ -83,11 +76,11 @@ const AuthController = {
         avatarUrl,
       };
 
-      const savedUser = await UserService.saveUser(user);
+      const savedUser = await UserService.createUser(user);
 
       return res
         .status(STATUS_CODE.CREATED)
-        .json({ isSuccess: true, data: UserDTO(savedUser) });
+        .json({ isSuccess: true, data: User.dto(savedUser) });
     } catch (error) {
       return serverError(res, error);
     }
@@ -103,7 +96,7 @@ const AuthController = {
     }
     return res.status(STATUS_CODE.SUCCESS).json({
       isSuccess: true,
-      data: UserDTO(user),
+      data: User.dto(user),
     });
   },
 };

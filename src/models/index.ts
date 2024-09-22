@@ -1,13 +1,24 @@
-import { BelongsToManyOptions } from 'sequelize';
-import { RoleModel } from './role.model';
-import { UserModel } from './user.model';
+import { userRoleAssociation } from './associations/user-role.association';
+import { Role } from './role.model';
+import { User } from './user.model';
+import { DB } from '@/database/database';
 
-export const setupAssociations = () => {
-  // User n-n Role
-  const userRoleAssociationOptions: BelongsToManyOptions = {
-    through: 'user_role',
+export const initModels = async () => {
+  DB.addModels([User.model, Role.model]);
+
+  // USER-ROLE ASSOCIATION - M:N
+  User.model.belongsToMany(Role.model, {
+    through: userRoleAssociation.tableName,
+    foreignKey: userRoleAssociation.userForeignKey,
+    otherKey: userRoleAssociation.roleForeignKey,
     timestamps: true,
-  };
-  UserModel.belongsToMany(RoleModel, userRoleAssociationOptions);
-  RoleModel.belongsToMany(UserModel, userRoleAssociationOptions);
+  });
+  Role.model.belongsToMany(User.model, {
+    through: userRoleAssociation.tableName,
+    foreignKey: userRoleAssociation.roleForeignKey,
+    otherKey: userRoleAssociation.userForeignKey,
+    timestamps: true,
+  });
+
+  await DB.sync({ logging: false, alter: true });
 };

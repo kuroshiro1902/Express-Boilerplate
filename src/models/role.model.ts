@@ -1,55 +1,58 @@
-import Joi from 'joi';
-import { VALIDATOR } from '@/common/validators/Validator';
-import { DB } from '@/database/database';
-import { DataTypes, Model } from 'sequelize';
+import { z } from 'zod';
+import { IUser } from './user.model';
+import { Table, Column, Model, DataType } from 'sequelize-typescript';
 
 const tableName = 'roles';
-const modelName = 'Role';
+const modelName = 'role';
 
-export interface IRole {
-  id: number;
-  name: string;
+export const roleSchema = z.object({
+  id: z.number().positive(),
+  name: z.string().min(1).max(32),
+});
+
+export type IRole = z.infer<typeof roleSchema>;
+
+const roleUpdateSchema = z.object({
+  name: z.string().min(1).max(32),
+});
+
+@Table({
+  tableName,
+  modelName,
+  timestamps: true,
+  underscored: true,
+})
+class RoleModel extends Model implements IRole {
+  @Column({
+    type: DataType.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  })
+  declare id: number;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
+  declare name: string;
+
+  declare users?: IUser[];
 }
 
-const RoleSchema = Joi.object<IRole>({
-  // id: Joi.number().integer().positive(),
-  name: Joi.string().max(32).required(),
-}).unknown(false);
-
-const UpdateableRoleSchema = Joi.object<Partial<IRole>>({
-  name: Joi.string().max(32).required(),
-}).unknown(false);
-
-export const RoleValidate = (input: any) => {
-  return VALIDATOR.schemaValidate(RoleSchema, input);
-};
-
-export const UpdateRoleValidate = (patchValue: Partial<IRole>) => {
-  return VALIDATOR.schemaValidate(UpdateableRoleSchema, patchValue);
-};
-
-export const RoleModel = DB.define<Model<IRole>, IRole>(
-  modelName,
-  {
-    id: {
-      type: DataTypes.BIGINT,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {},
-    },
-  },
-  {
-    tableName,
-    timestamps: true,
-    hooks: {},
-  }
-);
-
-export const RoleDTO = (role: IRole) => {
+const roleDto = (role: IRole) => {
   const { id, name } = role;
   return { id, name };
+};
+
+export const Role = {
+  get schema() {
+    return roleSchema;
+  },
+  get updateSchema() {
+    return roleUpdateSchema;
+  },
+  get model() {
+    return RoleModel;
+  },
+  dto: roleDto,
 };
