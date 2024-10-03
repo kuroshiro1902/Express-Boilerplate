@@ -4,7 +4,7 @@ import { serverError } from './serverError';
 import { UserService } from '@/services/user.service';
 import { Request, Response } from '@/types';
 import { AuthService } from '@/services/auth.service';
-import { User } from '@/models/user.model';
+import { IUserDto, User } from '@/models/user.model';
 import { z } from 'zod';
 
 const _LoginSchema = z.object({
@@ -13,7 +13,10 @@ const _LoginSchema = z.object({
 });
 
 const AuthController = {
-  async login(req: Request, res: Response) {
+  async login(
+    req: Request<z.infer<typeof _LoginSchema>>,
+    res: Response<{ token: string; user: IUserDto }>
+  ) {
     try {
       const { data, error } = _LoginSchema.safeParse(req.body);
       if (error) {

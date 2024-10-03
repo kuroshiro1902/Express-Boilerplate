@@ -1,20 +1,9 @@
-import { z } from 'zod';
-import { IUser } from './user.model';
 import { Table, Column, Model, DataType } from 'sequelize-typescript';
+import { IRole, roleSchema, roleUpdateSchema } from './types/role.type';
+import { IUser } from './types/user.type';
 
 const tableName = 'roles';
 const modelName = 'role';
-
-export const roleSchema = z.object({
-  id: z.number().positive(),
-  name: z.string().min(1).max(32),
-});
-
-export type IRole = z.infer<typeof roleSchema>;
-
-const roleUpdateSchema = z.object({
-  name: z.string().min(1).max(32),
-});
 
 @Table({
   tableName,

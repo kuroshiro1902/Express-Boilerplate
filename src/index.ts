@@ -11,7 +11,12 @@ const main = async () => {
   const app = express();
   app.use(bodyParser.json({ limit: '1mb' }));
   app.use(express.json());
-  app.use(cors());
+  app.use(
+    cors({
+      // origin: ENVIRONMENT.clientUrl,
+      credentials: true, // Cookies
+    })
+  );
 
   app.use(
     '/api',

@@ -5,6 +5,8 @@ import { ENVIRONMENT } from '@/environments/environment';
 import { ITokenPayload } from '@/models/user.model';
 
 export function authMiddleware(req: Request, res: Response, next: any) {
+  console.log('cookies: ', req.cookies);
+
   const token = req.header('Authorization');
 
   if (!token) {

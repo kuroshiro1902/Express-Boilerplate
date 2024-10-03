@@ -1,6 +1,7 @@
 import { Table, Column, Model, DataType } from 'sequelize-typescript';
 import { z } from 'zod';
-import { IRole, Role } from './role.model';
+import { IUser, userSchema, userUpdateSchema } from './types/user.type';
+import { IRole } from './types/role.type';
 
 const tableName = 'users';
 const modelName = 'user';
@@ -8,27 +9,6 @@ const modelName = 'user';
 export interface ITokenPayload {
   id: number;
 }
-
-const userSchema = z.object({
-  id: z.number().positive(),
-  name: z.string().min(3).max(255),
-  username: z.string().min(3).max(255),
-  password: z.string().min(6).max(255),
-  email: z.string().email().max(255).optional(),
-  dob: z.number().int().optional(),
-  avatarUrl: z.string().url().max(500).optional(),
-  roles: z.array(Role.schema).optional(),
-});
-
-const userUpdateSchema = z.object({
-  name: userSchema.shape.name.optional(),
-  password: userSchema.shape.password.optional(),
-  email: userSchema.shape.email.optional(),
-  avatarUrl: userSchema.shape.avatarUrl.optional(),
-  roles: userSchema.shape.roles.optional(),
-});
-
-export type IUser = z.infer<typeof userSchema>;
 
 @Table({
   timestamps: true,
@@ -105,7 +85,20 @@ export class UserModel extends Model<IUser> implements IUser {
   declare roles?: IRole[];
 }
 
-const userDto = (user: IUser) => {
+export interface IUserDto {
+  id: number;
+  name: string;
+  email: string | undefined;
+  dob: number | undefined;
+  avatarUrl: string | undefined;
+  roles:
+    | {
+        name: string;
+      }[]
+    | undefined;
+}
+
+const userDto = (user: IUser): IUserDto => {
   const { id, name, email, dob, avatarUrl, roles } = user;
   return {
     id,

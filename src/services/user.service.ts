@@ -1,8 +1,9 @@
 import { DEFAULT_ROLE_ID } from '@/constants/role.constant';
 import { DB } from '@/database/database';
-import { userRoleAssociation } from '@/models/associations/user-role.association';
 import { Role } from '@/models/role.model';
-import { IUser, User } from '@/models/user.model';
+import { IUser } from '@/models/types/user.type';
+import { User } from '@/models/user.model';
+
 import { FindOptions } from 'sequelize';
 import { z } from 'zod';
 

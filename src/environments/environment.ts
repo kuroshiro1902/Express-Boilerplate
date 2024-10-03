@@ -10,4 +10,6 @@ export const ENVIRONMENT = Object.freeze({
     port: +env.DB_PORT!,
     name: env.DB_NAME!,
   }),
+  clientUrl: env.CLIENT_URL!,
+  passwordSalt: +env.PASSWORD_SALT!,
 });

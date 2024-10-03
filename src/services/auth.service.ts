@@ -1,13 +1,12 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { env } from 'process';
 import { ENVIRONMENT } from '@/environments/environment';
 import { ITokenPayload } from '@/models/user.model';
 
 const accessTokenExpiresIn = '7d';
 // const accessTokenExpiresIn = '30m';
 const refreshTokenExpiresIn = '7d';
-const passwordSalt = +env.PASSWORD_SALT!;
+const passwordSalt = ENVIRONMENT.passwordSalt;
 export const AuthService = {
   hashPassword(password: string) {
     return bcrypt.hashSync(password, passwordSalt);
